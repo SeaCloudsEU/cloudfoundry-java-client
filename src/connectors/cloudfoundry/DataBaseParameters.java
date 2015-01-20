@@ -19,6 +19,8 @@ public class DataBaseParameters
 	private String password;
 	private String max_conns;
 	
+	private String url_conn;
+	
 	
 	/**
 	 * 
@@ -202,6 +204,34 @@ public class DataBaseParameters
 	 */
 	public void setMax_conns(String max_conns) {
 		this.max_conns = max_conns;
+	}
+	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public String getUrl_conn() {
+		return url_conn;
+	}
+
+
+	/**
+	 * 
+	 * @param url
+	 * @return
+	 */
+	public String parseUrlString(String url) {
+		//String url = "jdbc:mysql://bc686c6a95e7a4:ac77e270@us-cdbr-iron-east-01.cleardb.net:3306/ad_83822612f2b3cdd";
+		// jdbc:mysql://bc686c6a95e7a4:ac77e270@us-cdbr-iron-east-01.cleardb.net:3306/ad_83822612f2b3cdd
+		//		-->
+		// jdbc:mysql://us-cdbr-iron-east-01.cleardb.net:3306/ad_83822612f2b3cdd	
+		int pos1 = url.indexOf("://") + 3;
+		int pos2 = url.indexOf("@");
+	
+		String res = url.substring(0, pos1) + url.substring(pos2 + 1);
+		
+		return res;
 	}
 	
 	

@@ -4,7 +4,10 @@ import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.StartingInfo;
 import org.cloudfoundry.client.lib.domain.*;
+
+import connectors.cloudfoundry.db.SQLScripts;
 import connectors.cloudfoundry.libadapter.CustomCloudFoundryClient;
+
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -25,17 +28,17 @@ public class CloudFoundryConnector
 {
 
 	
+	// CF client
 	private CloudFoundryClient _cfclient;
-	
+	// default values
 	private static final int DEFAULT_MEMORY = 512; 		// MB
-	private static final int DEFAULT_INSTANCES = 1; 
 	private static final int DEFAULT_DISK_SPACE = 1; 	// GB
-
+	// used by lib-adapter classes
 	private String _APIEndPoint;
 	private String _login;
 	private String _passwd;
 	private boolean _trustSelfSignedCerts;
-
+	// logger
 	private static final Logger logAdapter = Logger.getLogger(CloudFoundryConnector.class.getName());
 	
 	
@@ -48,19 +51,7 @@ public class CloudFoundryConnector
 	 */
 	public CloudFoundryConnector(String APIEndPoint, String login, String passwd, boolean trustSelfSignedCerts) 
 	{
-		_APIEndPoint = APIEndPoint;
-		_login = login;
-		_passwd = passwd;
-		_trustSelfSignedCerts = true;
-
-		logAdapter.log(Level.INFO, ">> Connecting to CloudFoundry [" + APIEndPoint + "] ...");
-		
-		_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), 
-										   getTargetURL(APIEndPoint), 
-										   trustSelfSignedCerts);
-		_cfclient.login();
-		
-		logAdapter.log(Level.INFO, ">> ...");
+		this(APIEndPoint, login, passwd, "", "", trustSelfSignedCerts);
 	}
 	
 	
@@ -96,35 +87,26 @@ public class CloudFoundryConnector
 
 		logAdapter.log(Level.INFO, ">> Connecting to CloudFoundry [" + APIEndPoint + "] ...");
 		
-		_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), 
-										   getTargetURL(APIEndPoint), 
-										   organization, 
-										   space, 
-										   trustSelfSignedCerts);
+		if ((organization != null && !organization.isEmpty()) && (space != null && !space.isEmpty())) 
+		{
+			_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), 
+											   getTargetURL(APIEndPoint), 
+											   organization, 
+											   space, 
+											   trustSelfSignedCerts);
+		}
+		else 
+		{
+			_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), 
+											   getTargetURL(APIEndPoint), 
+											   trustSelfSignedCerts);
+		}
+		
 		_cfclient.login();
 		
 		logAdapter.log(Level.INFO, ">> ...");
 	}
-	
-	
-	/**
-	 * 
-	 * @param APIEndPoint
-	 * @param login
-	 * @param passwd
-	 * @param organization
-	 * @param space
-	 * @param trustSelfSignedCerts
-	 */
-	private void initParams(String APIEndPoint, String login, String passwd, String organization, String space, boolean trustSelfSignedCerts) 
-	{
-		_APIEndPoint = APIEndPoint;
-		_login = login;
-		_passwd = passwd;
-		_trustSelfSignedCerts = true;
-		
-	}
-	
+
 	
 	/**
 	 * 
@@ -185,7 +167,7 @@ public class CloudFoundryConnector
 	 * @param servicePlan
 	 * @param freePlan
 	 */
-	public void deployAppWithMySQL(String applicationName, String domainName, String warFile, String buildpackUrl, 
+	public void deployAppWithDatabase(String applicationName, String domainName, String warFile, String buildpackUrl, 
 									String serviceOffered, String serviceName, String servicePlan, boolean freePlan) 
 	{
 		// 1. Create service
@@ -212,6 +194,37 @@ public class CloudFoundryConnector
 			// 6. Start application
 			startApplication(app);
 		}
+	}
+	
+	
+	/**
+	 * DEPLOY an application with database in CF and also creates schema and tables (executes sql script)
+	 * 
+	 * 	1. DEPLOY an application with database (only binding) in CF
+	 *  7. Execute sql script
+	 *  
+	 * @param applicationName
+	 * @param domainName
+	 * @param warFile
+	 * @param buildpackUrl
+	 * @param serviceOffered
+	 * @param serviceName
+	 * @param servicePlan
+	 * @param freePlan
+	 * @param sqlFilePath
+	 * @param dbType
+	 */
+	public void deployAppWithDatabaseAndData(String applicationName, String domainName, String warFile, String buildpackUrl, 
+			String serviceOffered, String serviceName, String servicePlan, boolean freePlan, String sqlFilePath, SQLScripts.SQL_TYPE dbType) 
+	{
+		// 1. DEPLOY an application with database (only binding) in CF
+		deployAppWithDatabase(applicationName, domainName, warFile, buildpackUrl, serviceOffered, serviceName, servicePlan, freePlan);
+		
+		// 2. Execute sql script
+		DataBaseParameters dbparams = getDBEnvValues(applicationName, serviceOffered);
+		SQLScripts sqls = new SQLScripts();
+		//sqls.createDB(dbparams.getUri(), "", "", sqlFilePath, dbType);
+		sqls.createDB(dbparams.getJdbcUrl(), dbparams.getUsername(), dbparams.getPassword(), sqlFilePath, dbType);
 	}
 	
 	
@@ -293,7 +306,7 @@ public class CloudFoundryConnector
 		    // 1. Create application
 		    logAdapter.log(Level.INFO, ">> Creating application ... ");
 		    
-			_cfclient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, serviceNames);
+			_cfclient.createApplication(applicationName, staging, DEFAULT_DISK_SPACE, DEFAULT_MEMORY, uris, serviceNames);
 			CloudApplication app = _cfclient.getApplication(applicationName);
 			
 	        logAdapter.log(Level.INFO, ">> Application details: " + app.toString());
@@ -513,7 +526,7 @@ public class CloudFoundryConnector
 	 * @param serviceOfferedRealName
 	 * @return
 	 */
-	public DataBaseParameters getDBEnvValues(String applicationName, String serviceOfferedRealName) 
+	private DataBaseParameters getDBEnvValues(String applicationName, String serviceOfferedRealName) 
 	{
 		DataBaseParameters res = null;
 		
