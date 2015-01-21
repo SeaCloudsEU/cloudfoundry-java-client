@@ -2,13 +2,12 @@ package connectors.cloudfoundry;
 
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.cloudfoundry.client.lib.StartingInfo;
+import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.domain.*;
-
 import connectors.cloudfoundry.db.SQLScripts;
 import connectors.cloudfoundry.libadapter.CustomCloudFoundryClient;
-
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
@@ -31,9 +30,8 @@ public class CloudFoundryConnector
 	// CF client
 	private CloudFoundryClient _cfclient;
 	// default values
-	private static final int DEFAULT_MEMORY = 512; 		// MB
-	private static final int DEFAULT_DISK_SPACE = 1; 	// GB
-	// used by lib-adapter classes
+	private final int DEFAULT_MEMORY = 512; 		// MB
+	// used by lib-adapter classes in order to get all the application environment values
 	private String _APIEndPoint;
 	private String _login;
 	private String _passwd;
@@ -78,7 +76,8 @@ public class CloudFoundryConnector
 	 * @param space
 	 * @param trustSelfSignedCerts
 	 */
-	public CloudFoundryConnector(String APIEndPoint, String login, String passwd, String organization, String space, boolean trustSelfSignedCerts) 
+	public CloudFoundryConnector(String APIEndPoint, String login, String passwd, String organization, 
+					String space, boolean trustSelfSignedCerts) 
 	{
 		_APIEndPoint = APIEndPoint;
 		_login = login;
@@ -86,30 +85,27 @@ public class CloudFoundryConnector
 		_trustSelfSignedCerts = true;
 
 		logAdapter.log(Level.INFO, ">> Connecting to CloudFoundry [" + APIEndPoint + "] ...");
-		
-		if ((organization != null && !organization.isEmpty()) && (space != null && !space.isEmpty())) 
-		{
-			_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), 
-											   getTargetURL(APIEndPoint), 
-											   organization, 
-											   space, 
-											   trustSelfSignedCerts);
+		try {
+			if ((organization != null && !organization.isEmpty()) && (space != null && !space.isEmpty())) {
+				_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), getTargetURL(APIEndPoint), 
+												   organization, space, trustSelfSignedCerts);
+			}
+			else {
+				_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), getTargetURL(APIEndPoint), trustSelfSignedCerts);
+			}
+			
+			_cfclient.login();
+			logAdapter.log(Level.INFO, ">> Connection established");
 		}
-		else 
-		{
-			_cfclient = new CloudFoundryClient(new CloudCredentials(login, passwd), 
-											   getTargetURL(APIEndPoint), 
-											   trustSelfSignedCerts);
+		catch (CloudFoundryException ex) {
+			logAdapter.log(Level.WARNING, ">> " + ex.getMessage());
+			throw ex;
 		}
-		
-		_cfclient.login();
-		
-		logAdapter.log(Level.INFO, ">> ...");
 	}
 
 	
 	/**
-	 * 
+	 * Returns the cloud foundry client object
 	 * @return
 	 */
 	public CloudFoundryClient getConnectedClient() 
@@ -124,27 +120,38 @@ public class CloudFoundryConnector
 	 * 	2. Upload application
 	 * 	3. Start application
 	 * 
-	 * -push command examples:
+	 * -push command examples (CLI):
 	 * 		cf push ehealthgui 	-p ./apps/WebGUI_v3.war 	-d 62.14.219.157.xip.io -b https://github.com/rsucasas/java-buildpack.git -m 512MB -i 1
 	 * 		cf push softcare-ws -p ./apps/softcare-ws.war 	-b https://github.com/rsucasas/java-buildpack.git -m 512MB -i 1
 	 *
-	 * @param applicationName
-	 * @param domainName
-	 * @param warFile
-	 * @param buildpackUrl
+	 * @param applicationName Application name
+	 * @param domainName 
+	 * @param warFile 
+	 * @param buildpackUrl For example: https://github.com/rsucasas/java-buildpack.git
 	 */
 	public void deployApp(String applicationName, String domainName, String warFile, String buildpackUrl) 
 	{
 		// 1. Create application
 		CloudApplication app = createApplication(applicationName, domainName, buildpackUrl);
 		
-		if (app != null) {
-			// 2. Upload application
-			uploadApplication(app, warFile);
-			
+		// 2. Upload application
+		if ((app != null) && (uploadApplication(app, warFile))) {
 			// 3. Start application
-			startApplication(app);
+			logAdapter.log(Level.INFO, ">> Starting application ... ");
+			_cfclient.startApplication(app.getName());
 		}
+	}
+	
+	
+	/**
+	 * 
+	 * @param applicationName
+	 * @param warFile
+	 * @param buildpackUrl
+	 */
+	public void deployApp(String applicationName, String warFile, String buildpackUrl)
+	{
+		deployApp(applicationName, "", warFile, buildpackUrl);
 	}
 	
 	
@@ -154,7 +161,7 @@ public class CloudFoundryConnector
 	 * 	1. Create service
 	 * 	2. Create application
 	 * 	3. bind to service
-	 * 	4. get database parameters and setup application envionment variables
+	 * 	4. get database parameters and setup application environment variables
 	 *  5. Upload application
 	 *  6. Start application
 	 * 
@@ -177,31 +184,48 @@ public class CloudFoundryConnector
 		// 2. Create application
 		CloudApplication app = createApplication(applicationName, domainName, buildpackUrl);
 		
-		if (app != null) 
-		{
-			if (cs != null) 
-			{
+		if (app != null) {
+			if (cs != null) {
 				// 3. bind to service
-				bindToService(app, serviceName);
+				logAdapter.log(Level.INFO, ">> Binding application to service [" + serviceName + "] ... ");
+				_cfclient.bindService(app.getName(), serviceName);
 				
 				// 4. get database parameters and setup application envionment variables
 				setupEnvironment(app, serviceName, servicePlan, serviceOffered);
 			}
 			
 			// 5. Upload application
-			uploadApplication(app, warFile);
-			
-			// 6. Start application
-			startApplication(app);
+			if (uploadApplication(app, warFile)) {
+				// 6. Start application
+				logAdapter.log(Level.INFO, ">> Starting application ... ");
+				_cfclient.startApplication(app.getName());
+			}
 		}
 	}
 	
 	
 	/**
-	 * DEPLOY an application with database in CF and also creates schema and tables (executes sql script)
+	 * 
+	 * @param applicationName
+	 * @param warFile
+	 * @param buildpackUrl
+	 * @param serviceOffered
+	 * @param serviceName
+	 * @param servicePlan
+	 * @param freePlan
+	 */
+	public void deployAppWithDatabase(String applicationName, String warFile, String buildpackUrl, 
+			String serviceOffered, String serviceName, String servicePlan, boolean freePlan) 
+	{
+		deployAppWithDatabase(applicationName, "", warFile, buildpackUrl, serviceOffered, serviceName, servicePlan, freePlan);
+	}
+	
+	
+	/**
+	 * DEPLOY an application with database in CF and also creates the database schema and tables (executes a sql script)
 	 * 
 	 * 	1. DEPLOY an application with database (only binding) in CF
-	 *  7. Execute sql script
+	 *  2. Execute sql script
 	 *  
 	 * @param applicationName
 	 * @param domainName
@@ -214,7 +238,7 @@ public class CloudFoundryConnector
 	 * @param sqlFilePath
 	 * @param dbType
 	 */
-	public void deployAppWithDatabaseAndData(String applicationName, String domainName, String warFile, String buildpackUrl, 
+	public void deployAppWithDatabasePopulate(String applicationName, String domainName, String warFile, String buildpackUrl, 
 			String serviceOffered, String serviceName, String servicePlan, boolean freePlan, String sqlFilePath, SQLScripts.SQL_TYPE dbType) 
 	{
 		// 1. DEPLOY an application with database (only binding) in CF
@@ -224,52 +248,62 @@ public class CloudFoundryConnector
 		DataBaseParameters dbparams = getDBEnvValues(applicationName, serviceOffered);
 		SQLScripts sqls = new SQLScripts();
 		//sqls.createDB(dbparams.getUri(), "", "", sqlFilePath, dbType);
-		sqls.createDB(dbparams.getJdbcUrl(), dbparams.getUsername(), dbparams.getPassword(), sqlFilePath, dbType);
+		//sqls.createDB(dbparams.getJdbcUrl(), dbparams.getUsername(), dbparams.getPassword(), sqlFilePath, dbType);
+		sqls.createDB(dbparams.getUrl_conn(), dbparams.getUsername(), dbparams.getPassword(), sqlFilePath, dbType);
 	}
 	
 	
 	/**
-	 * 
+	 * Deletes an application and the services binded to this application
 	 * @param applicationName
 	 */
 	public void deleteApp(String applicationName) 
 	{
-		CloudApplication app = _cfclient.getApplication(applicationName);
+		CloudApplication app = null;
 		
-		// 1. delete application
-		logAdapter.log(Level.INFO, ">> Deleting application [" + applicationName + "] ... ");
-		_cfclient.deleteApplication(applicationName);
+		try {
+			app = _cfclient.getApplication(applicationName);
+		}
+		catch (CloudFoundryException ex) {
+			logAdapter.log(Level.WARNING, ">> [" + applicationName + "] not found ");
+		}
 
-		// 2. delete services if not attached to other applications
-		List<String> lServices = app.getServices();								// services used by the deleted application
+		if (app != null)
+		{
+			// 1. delete application
+			logAdapter.log(Level.INFO, ">> Deleting application [" + applicationName + "] ... ");
+			_cfclient.deleteApplication(applicationName);
 
-		if (lServices.size() > 0) {
-			List<CloudApplication> lApplications = _cfclient.getApplications();	// other client applications
-			
-			for (String serviceName : lServices) {
-				// if there are other applications, check if the services is being used by any of them
-				if (lApplications.size() > 0) {
-					for (CloudApplication capp : lApplications) {
-						List<String> lServices2 = capp.getServices();
-						
-						if (!lServices2.contains(serviceName)) {
-							logAdapter.log(Level.INFO, ">> Deleting service [" + serviceName + "] ... ");
-							_cfclient.deleteService(serviceName);
-						}
-						else {
-							logAdapter.log(Level.INFO, ">> Service [" + serviceName + "] is used by other applications ");
+			// 2. delete services if not attached to other applications
+			List<String> lServices = app.getServices();								// services used by the deleted application
+
+			if (lServices.size() > 0) {
+				List<CloudApplication> lApplications = _cfclient.getApplications();	// other client applications
+				
+				for (String serviceName : lServices) {
+					// if there are other applications, check if the services is being used by any of them
+					if (lApplications.size() > 0) {
+						for (CloudApplication capp : lApplications) {
+							List<String> lServices2 = capp.getServices();
+							
+							if (!lServices2.contains(serviceName)) {
+								logAdapter.log(Level.INFO, ">> Deleting service [" + serviceName + "] ... ");
+								_cfclient.deleteService(serviceName);
+							}
+							else {
+								logAdapter.log(Level.INFO, ">> Service [" + serviceName + "] is used by other applications ");
+							}
 						}
 					}
-				}
-				// if there are no more application, then it's safe to delete the service
-				else {
-					logAdapter.log(Level.INFO, ">> Deleting service [" + serviceName + "] ... ");
-					_cfclient.deleteService(serviceName);
+					// if there are no more applications, then it's safe to delete the service
+					else {
+						logAdapter.log(Level.INFO, ">> Deleting service [" + serviceName + "] ... ");
+						_cfclient.deleteService(serviceName);
+					}
 				}
 			}
+			logAdapter.log(Level.INFO, ">> [" + applicationName + "] deleted ");
 		}
-		
-		logAdapter.log(Level.INFO, ">> ... ");
 	}
 	
 	
@@ -287,12 +321,10 @@ public class CloudFoundryConnector
 			// initialize parameters ...
 			// buildpack: -b https://github.com/cloudfoundry/java-buildpack.git
 			Staging staging = null;
-			if (buildpackUrl != null) 
-			{
+			if (buildpackUrl != null) {
 				staging = new Staging(null, buildpackUrl);
 			}
-			else 
-			{
+			else {
 				staging = new Staging();
 			}
 			
@@ -306,15 +338,14 @@ public class CloudFoundryConnector
 		    // 1. Create application
 		    logAdapter.log(Level.INFO, ">> Creating application ... ");
 		    
-			_cfclient.createApplication(applicationName, staging, DEFAULT_DISK_SPACE, DEFAULT_MEMORY, uris, serviceNames);
+			_cfclient.createApplication(applicationName, staging, DEFAULT_MEMORY, uris, serviceNames);
 			CloudApplication app = _cfclient.getApplication(applicationName);
 			
 	        logAdapter.log(Level.INFO, ">> Application details: " + app.toString());
 	        
 	        return app;
 		} 
-		catch (Exception e) 
-		{
+		catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -327,41 +358,17 @@ public class CloudFoundryConnector
 	 * @param warFile
 	 * @return
 	 */
-	private void uploadApplication(CloudApplication app, String warFile) 
+	private boolean uploadApplication(CloudApplication app, String warFile) 
 	{
-		try 
-		{
+		try {
 			// 2. Upload application
             logAdapter.log(Level.INFO, ">> Uploading application from " + new File(warFile).getCanonicalPath() + " ... ");
-            
             _cfclient.uploadApplication(app.getName(), new File(warFile).getCanonicalPath());
+            return true;
 		} 
-		catch (Exception e) 
-		{
+		catch (IOException e) {
 			e.printStackTrace();
-		}
-	}
-	
-	
-	/**
-	 * 
-	 * @param app
-	 * @return
-	 */
-	private void startApplication(CloudApplication app) 
-	{
-		try 
-		{
-			logAdapter.log(Level.INFO, ">> Starting application ... ");
-
-            StartingInfo stIfo = _cfclient.startApplication(app.getName());
-            app = _cfclient.getApplication(app.getName());
-            
-            logAdapter.log(Level.INFO, ">> ... " + app.getState().toString() + "    " + stIfo.toString());
-		} 
-		catch (Exception e) 
-		{
-			e.printStackTrace();
+			return false;
 		}
 	}
 	
@@ -448,18 +455,6 @@ public class CloudFoundryConnector
 	 * 
 	 * @param app
 	 * @param serviceName
-	 */
-	private void bindToService(CloudApplication app, String serviceName) 
-	{
-		logAdapter.log(Level.INFO, ">> Binding application to service [" + serviceName + "] ... ");
-		_cfclient.bindService(app.getName(), serviceName);
-	}
-	
-	
-	/**
-	 * 
-	 * @param app
-	 * @param serviceName
 	 * @param servicePlan
 	 * @param serviceOfferedRealName
 	 */
@@ -471,7 +466,7 @@ public class CloudFoundryConnector
 			DataBaseParameters dbparams = getDBEnvValues(app.getName(), serviceOfferedRealName);
 			
 			logAdapter.log(Level.INFO, ">> Setting up application environment ... ");
-			HashMap<String, String> mEnvValues = new HashMap<String, String>(7);
+			HashMap<String, String> mEnvValues = new HashMap<String, String>(13);
 			
 			mEnvValues.put("jdbcurl", dbparams.getJdbcUrl());
 			mEnvValues.put("uri", dbparams.getUri());
@@ -482,6 +477,7 @@ public class CloudFoundryConnector
 			mEnvValues.put("password", dbparams.getPassword());
 			mEnvValues.put("max_conns", dbparams.getMax_conns());
 			
+			// create application database environment variables
 			_cfclient.updateApplicationEnv(app.getName(), mEnvValues);
 		} 
 		catch (Exception e) 
@@ -497,12 +493,10 @@ public class CloudFoundryConnector
 	 * @return
 	 */
 	private URL getTargetURL(String target) {
-		try 
-		{
+		try {
 			return URI.create(target).toURL();
 		} 
-		catch (MalformedURLException e) 
-		{
+		catch (MalformedURLException e) {
 			throw new RuntimeException("The target URL is not valid: " + e.getMessage());
 		}
 	}
@@ -528,18 +522,16 @@ public class CloudFoundryConnector
 	 */
 	private DataBaseParameters getDBEnvValues(String applicationName, String serviceOfferedRealName) 
 	{
-		DataBaseParameters res = null;
+		DataBaseParameters res = new DataBaseParameters();
 		
 		try
 		{
 			CloudApplication app = _cfclient.getApplication(applicationName);
 			String appId = app.getMeta().getGuid().toString();
 			
-			// get env values from CF - application
+			// get env values from CF - application --> use of libadapter
 			CustomCloudFoundryClient cfclientTmp = 
-	        		new CustomCloudFoundryClient(new CloudCredentials(_login, _passwd), 
-					            				getTargetURL(_APIEndPoint), 
-					            				_trustSelfSignedCerts);
+					new CustomCloudFoundryClient(new CloudCredentials(_login, _passwd), getTargetURL(_APIEndPoint), _trustSelfSignedCerts);
 	        cfclientTmp.login();
 	        String envVars = cfclientTmp.getEnvValuesAsString(appId);
 	        cfclientTmp.logout();

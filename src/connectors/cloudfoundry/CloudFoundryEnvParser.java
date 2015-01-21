@@ -128,6 +128,9 @@ public class CloudFoundryEnvParser
 			res.setPort(getValue(resJsonObject, "port"));
 			res.setUsername(getValue(resJsonObject, "username"));
 			res.setPassword(getValue(resJsonObject, "password"));
+			
+			String jdbcUrlParsed = res.parseUrlString(res.getJdbcUrl());
+			res.setUrl_conn(jdbcUrlParsed);
 		}
 		
 		return res;

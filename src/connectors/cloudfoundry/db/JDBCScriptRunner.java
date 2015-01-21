@@ -5,7 +5,6 @@ import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.sql.*;
-import java.util.logging.Logger;
 
 
 /**
@@ -27,9 +26,6 @@ public class JDBCScriptRunner
 	private PrintWriter errorLogWriter = new PrintWriter(System.err);
 	private String delimiter = DEFAULT_DELIMITER;
 	private boolean fullLineDelimiter = false;
-	
-	// logger
-	private static final Logger logAdapter = Logger.getLogger(JDBCScriptRunner.class.getName());
 
 
 	/**

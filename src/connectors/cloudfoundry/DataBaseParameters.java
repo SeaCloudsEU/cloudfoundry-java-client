@@ -215,6 +215,15 @@ public class DataBaseParameters
 		return url_conn;
 	}
 
+	
+	/**
+	 * 
+	 * @param url_conn
+	 */
+	public void setUrl_conn(String url_conn) {
+		this.url_conn = url_conn;
+	}
+
 
 	/**
 	 * 
