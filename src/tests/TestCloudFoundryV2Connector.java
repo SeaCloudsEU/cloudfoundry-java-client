@@ -84,14 +84,20 @@ public class TestCloudFoundryV2Connector
 	}
 	
 
-	/*@Test
+	@Test
 	public void testDeployAppStringStringString()
 	{
-		fail("Not yet implemented");
+		cfClient = new CloudFoundryConnector(target, user, password, organization, space, true);
+		boolean res = cfClient.deployApp("newApp1", 
+								   		  "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+								   		  "https://github.com/rsucasas/java-buildpack.git");
+		cfClient.deleteApp("newApp1");
+		
+		assertTrue(res);
 	}
 
 
-	@Test
+	/*@Test
 	public void testDeployAppWithDatabaseStringStringStringStringStringStringStringBoolean()
 	{
 		fail("Not yet implemented");

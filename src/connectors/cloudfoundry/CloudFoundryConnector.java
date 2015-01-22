@@ -153,9 +153,9 @@ public class CloudFoundryConnector
 	 * @param warFile
 	 * @param buildpackUrl
 	 */
-	public void deployApp(String applicationName, String warFile, String buildpackUrl)
+	public boolean deployApp(String applicationName, String warFile, String buildpackUrl)
 	{
-		deployApp(applicationName, "", warFile, buildpackUrl);
+		return deployApp(applicationName, "", warFile, buildpackUrl);
 	}
 	
 	
