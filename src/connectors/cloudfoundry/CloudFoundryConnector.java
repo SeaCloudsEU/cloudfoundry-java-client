@@ -128,8 +128,9 @@ public class CloudFoundryConnector
 	 * @param domainName 
 	 * @param warFile 
 	 * @param buildpackUrl For example: https://github.com/rsucasas/java-buildpack.git
+	 * @return
 	 */
-	public void deployApp(String applicationName, String domainName, String warFile, String buildpackUrl) 
+	public boolean deployApp(String applicationName, String domainName, String warFile, String buildpackUrl) 
 	{
 		// 1. Create application
 		CloudApplication app = createApplication(applicationName, domainName, buildpackUrl);
@@ -139,7 +140,10 @@ public class CloudFoundryConnector
 			// 3. Start application
 			logAdapter.log(Level.INFO, ">> Starting application ... ");
 			_cfclient.startApplication(app.getName());
+			return true;
 		}
+		
+		return false;
 	}
 	
 	

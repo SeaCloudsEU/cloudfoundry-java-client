@@ -21,7 +21,7 @@ import connectors.cloudfoundry.db.SQLScripts;
  * @author a572832
  *
  */
-public class TestCloudFoundryConnector 
+public class CustomTests 
 {
 
 	
