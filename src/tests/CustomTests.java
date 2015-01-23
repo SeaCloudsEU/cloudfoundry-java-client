@@ -18,7 +18,7 @@ import connectors.cloudfoundry.db.SQLScripts;
 
 /**
  * 
- * @author a572832
+ * @author 
  *
  */
 public class CustomTests 
@@ -30,18 +30,10 @@ public class CustomTests
 		try {
 			// https://api.run.pivotal.io
 			String target = "https://api.run.pivotal.io"; 
-			String user = "rsucasas@gmail.com"; 				
-			String password = "scss852ATOS"; 					
-			String organization = "rsucasas-org"; 				
-			String space = "development";
-			
-			// https://api.run.pivotal.io
-			// 		--> 	cf login -a https://api.95.211.172.243.xip.io -u admin -p c1oudc0w --skip-ssl-validation
-			/*String target = "https://api.95.211.172.243.xip.io"; 
-			String user = "admin"; 							
-			String password = "c1oudc0w"; 						
-			String organization = "DevBox"; 					 
-			String space = "ATOS";*/ 								
+			String user = ""; 				
+			String password = ""; 					
+			String organization = "org"; 				
+			String space = "development";						
 		
 			// Connect to CF: OK
 			System.out.println("---------------------------------------------------------");
@@ -50,21 +42,21 @@ public class CustomTests
 			// DEPLOY APP: OK
 			/*System.out.println("---------------------------------------------------------");
 			cfClient.deployApp("newApp1", "", 
-							   "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
-							   "https://github.com/rsucasas/java-buildpack.git");*/
+							   "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+							   "https://github.com/java-buildpack.git");*/
 
 			// DEPLOY APP + DATABASE BINDING - cleardb: OK
 			/*System.out.println("---------------------------------------------------------");
 			cfClient.deployAppWithDatabase("newApp12", 
-					   "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
-					   "https://github.com/rsucasas/java-buildpack.git",
+					   "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+					   "https://github.com/java-buildpack.git",
 					   "cleardb", "mycleardb", "spark", true);*/
 			
 			// DEPLOY APP + DATABASE BINDING - elephantsql: OK
 			/*System.out.println("---------------------------------------------------------");
 			cfClient.deployAppWithDatabase("newApp123", "", 
-					   "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
-					   "https://github.com/rsucasas/java-buildpack.git",
+					   "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+					   "https://github.com/java-buildpack.git",
 					   "elephantsql", "myelephantsql", "turtle", true);*/
 			
 			// DELETE APP and SERVICES: OK
@@ -79,15 +71,15 @@ public class CustomTests
 			// DEPLOY APP - wrong parameters: OK
 			/*System.out.println("---------------------------------------------------------");
 			cfClient.deployApp("newApp1", "", 
-							   "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui123.war", 
-							   "https://github.com/rsucasas/java-buildpack.git");*/
+							   "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui123.war", 
+							   "https://github.com/java-buildpack.git");*/
 			
 			
 			// DEPLOY APP + DATABASE BINDING + EXECUTE SCRIPT: OK
 			System.out.println("---------------------------------------------------------");
 			cfClient.deployAppWithDatabasePopulate("newApp1", "", 
-					   "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
-					   "https://github.com/rsucasas/java-buildpack.git",
+					   "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+					   "https://github.com/java-buildpack.git",
 					   "cleardb", "mycleardb", "spark", true,
 					   "C:\\PROYECTOS\\SEACLOUDS\\mysql_db_struct.sql",
 					   SQLScripts.SQL_TYPE.MySQL);

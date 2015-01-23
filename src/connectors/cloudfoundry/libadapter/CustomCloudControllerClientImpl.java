@@ -168,7 +168,7 @@ public class CustomCloudControllerClientImpl
 	 * Get all the environment variables
 	 * 
 	 * Example call:
-	 * https://api.95.211.172.243.xip.io/v2/apps/7741aade-efdd-4045-8827-5f3ef1b1072e/env
+	 * https://api.111.211.122.273.xip.io/v2/apps/7741aade-efdd-4045-8827-5f3ef1b1072e/env
 	 * 
 	 * @param appId
 	 */

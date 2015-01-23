@@ -19,10 +19,10 @@ public class TestCloudFoundryV2Connector
 
 
 	String target = "https://api.run.pivotal.io"; 
-	String user = "rsucasas@gmail.com"; 				
-	String password = "scss852ATOS"; 					
-	String organization = "rsucasas-org"; 				
-	String space = "development";
+	String user = ""; 				
+	String password = ""; 					
+	String organization = "org"; 				
+	String space = "space";
 	CloudFoundryConnector cfClient;
 	
 	private static final Logger logAdapter = Logger.getLogger(TestCloudFoundryV2Connector.class.getName());
@@ -76,7 +76,7 @@ public class TestCloudFoundryV2Connector
 		cfClient = new CloudFoundryConnector(target, user, password, organization, space, true);
 		boolean res = cfClient.deployApp("newApp1", 
 										  "", 
-								   		  "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+								   		  "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
 								   		  "https://github.com/rsucasas/java-buildpack.git");
 		cfClient.deleteApp("newApp1");
 		
@@ -89,7 +89,7 @@ public class TestCloudFoundryV2Connector
 	{
 		cfClient = new CloudFoundryConnector(target, user, password, organization, space, true);
 		boolean res = cfClient.deployApp("newApp1", 
-								   		  "C:\\Users\\A572832\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+								   		  "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
 								   		  "https://github.com/rsucasas/java-buildpack.git");
 		cfClient.deleteApp("newApp1");
 		

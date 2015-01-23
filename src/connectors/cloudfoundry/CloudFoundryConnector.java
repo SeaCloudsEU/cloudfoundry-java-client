@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 
 /**
  * 
- * @author a572832
+ * @author 
  *
  */
 public class CloudFoundryConnector

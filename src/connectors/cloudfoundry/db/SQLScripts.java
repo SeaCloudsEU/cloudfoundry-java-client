@@ -2,7 +2,6 @@ package connectors.cloudfoundry.db;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -31,51 +30,6 @@ public class SQLScripts
 	
 	// logger
 	private static final Logger logAdapter = Logger.getLogger(SQLScripts.class.getName());
-	
-	
-	// sql script with all initial data needed to run the application
-	public static String INIT_SCRIPT = "20141006_bdNoEnc.sql";	
-	
-	
-	/**
-	 * 
-	 * @return
-	 */
-	public boolean createDB()
-	{
-		Connection conn = null;
-		try
-		{
-			
-			Class.forName("com.mysql.jdbc.Driver");
-			conn = DriverManager.getConnection("jdbc:mysql://ec2-23-21-211-172.compute-1.amazonaws.com:3306/ehealth-db", 
-					"ehealthdbuser", "password123");
-			
-			boolean booleanAutoCommit = false;
-			boolean booleanStopOnerror = true;
-			
-			ClassLoader loader = SQLScripts.class.getClassLoader();
-			JDBCScriptRunner runner = new JDBCScriptRunner(conn, booleanAutoCommit, booleanStopOnerror);
-			runner.runScript(new BufferedReader(new InputStreamReader(loader.getResourceAsStream(INIT_SCRIPT), "UTF-8")));
-			
-			conn.close();
-			
-			return true;
-		}
-		catch (Exception ex)
-		{
-			ex.printStackTrace();
-			
-			return false;
-		}
-		finally {
-			try
-			{
-				conn.close();
-			}
-			catch (SQLException e) {}
-		}
-	}
 	
 	
 	/**

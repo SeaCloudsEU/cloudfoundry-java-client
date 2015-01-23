@@ -3,7 +3,7 @@ package connectors.cloudfoundry;
 
 /**
  * 
- * @author a572832
+ * @author 
  *
  */
 public class DataBaseParameters 
