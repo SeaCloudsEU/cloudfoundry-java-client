@@ -1,11 +1,12 @@
 package connectors.cloudfoundry;
 
+import connectors.cloudfoundry.db.SQLScripts;
+import connectors.cloudfoundry.libadapter.CustomCloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudCredentials;
 import org.cloudfoundry.client.lib.CloudFoundryClient;
 import org.cloudfoundry.client.lib.CloudFoundryException;
 import org.cloudfoundry.client.lib.domain.*;
-import connectors.cloudfoundry.db.SQLScripts;
-import connectors.cloudfoundry.libadapter.CustomCloudFoundryClient;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -130,7 +131,7 @@ public class CloudFoundryConnector
 	 * @param buildpackUrl For example: https://github.com/rsucasas/java-buildpack.git
 	 * @return
 	 */
-	public boolean deployApp(String applicationName, String domainName, String warFile, String buildpackUrl) 
+	public boolean deployApp(String applicationName, String domainName, String warFile, String buildpackUrl)
 	{
 		// 1. Create application
 		CloudApplication app = createApplication(applicationName, domainName, buildpackUrl);
@@ -182,7 +183,7 @@ public class CloudFoundryConnector
 									String serviceOffered, String serviceName, String servicePlan, boolean freePlan) 
 	{
 		// 1. Create service
-	    // http://docs.cloudfoundry.org/devguide/services/managing-services.html
+	    // http://docs.connectors.cloudfoundry.org/devguide/services/managing-services.html
 		CloudService cs = createService(serviceOffered, serviceName, servicePlan, freePlan);
 		
 		// 2. Create application
@@ -234,10 +235,10 @@ public class CloudFoundryConnector
 	 * @param applicationName
 	 * @param domainName
 	 * @param warFile
-	 * @param buildpackUrl
-	 * @param serviceOffered
-	 * @param serviceName
-	 * @param servicePlan
+     * @param buildpackUrl
+     * @param serviceOffered
+     * @param serviceName
+     * @param servicePlan
 	 * @param freePlan
 	 * @param sqlFilePath
 	 * @param dbType
@@ -323,7 +324,7 @@ public class CloudFoundryConnector
 		try 
 		{
 			// initialize parameters ...
-			// buildpack: -b https://github.com/cloudfoundry/java-buildpack.git
+			// buildpack: -b https://github.com/connectors.cloudfoundry/java-buildpack.git
 			Staging staging = null;
 			if (buildpackUrl != null) {
 				staging = new Staging(null, buildpackUrl);
@@ -413,9 +414,9 @@ public class CloudFoundryConnector
 					newService.setName(serviceName);
 					newService.setProvider(cservice.getProvider());
 					newService.setVersion(cservice.getVersion());
-					newService.setMeta(cservice.getMeta());			
+					newService.setMeta(cservice.getMeta());
 					newService.setPlan(null);
-					
+
 					List<CloudServicePlan> lPlans = cservice.getCloudServicePlans();
 					for (CloudServicePlan plan : lPlans)
 					{
@@ -534,7 +535,7 @@ public class CloudFoundryConnector
 			String appId = app.getMeta().getGuid().toString();
 			
 			// get env values from CF - application --> use of libadapter
-			CustomCloudFoundryClient cfclientTmp = 
+			CustomCloudFoundryClient cfclientTmp =
 					new CustomCloudFoundryClient(new CloudCredentials(_login, _passwd), getTargetURL(_APIEndPoint), _trustSelfSignedCerts);
 	        cfclientTmp.login();
 	        String envVars = cfclientTmp.getEnvValuesAsString(appId);

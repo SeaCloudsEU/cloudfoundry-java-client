@@ -1,12 +1,13 @@
-package tests;
+
 
 import static org.junit.Assert.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import connectors.cloudfoundry.CloudFoundryConnector;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import connectors.cloudfoundry.CloudFoundryConnector;
 
 
 /**
@@ -20,20 +21,20 @@ public class TestCloudFoundryV2Connector
 
 	String target = "https://api.run.pivotal.io"; 
 	String user = ""; 				
-	String password = ""; 					
-	String organization = "org"; 				
+	String password = "";
+	String organization = "org";
 	String space = "space";
 	CloudFoundryConnector cfClient;
-	
+
 	private static final Logger logAdapter = Logger.getLogger(TestCloudFoundryV2Connector.class.getName());
-	
-	
+
+
 	@Before
 	public void setUp() throws Exception
 	{
 	}
-	
-	
+
+
 	@After
 	public void tearDown() throws Exception
 	{
@@ -47,7 +48,7 @@ public class TestCloudFoundryV2Connector
 	public void testCloudFoundryConnectorStringStringStringBoolean()
 	{
 		cfClient = new CloudFoundryConnector(target, user, password, true);
-		
+
 		assertTrue(cfClient != null);
 	}
 
@@ -56,7 +57,7 @@ public class TestCloudFoundryV2Connector
 	public void testCloudFoundryConnectorStringStringStringStringString()
 	{
 		cfClient = new CloudFoundryConnector(target, user, password, organization, space);
-		
+
 		assertTrue(cfClient != null);
 	}
 
@@ -65,18 +66,18 @@ public class TestCloudFoundryV2Connector
 	public void testCloudFoundryConnectorStringStringStringStringStringBoolean()
 	{
 		cfClient = new CloudFoundryConnector(target, user, password, organization, space, true);
-		
+
 		assertTrue(cfClient != null);
 	}
 
-	
+
 	@Test
 	public void testDeployAppStringStringStringString()
 	{
 		cfClient = new CloudFoundryConnector(target, user, password, organization, space, true);
-		boolean res = cfClient.deployApp("newApp1", 
-										  "", 
-								   		  "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war", 
+		boolean res = cfClient.deployApp("newApp1",
+										  "",
+								   		  "C:\\Users\\git\\seaclouds_gui\\WebGUI_v2\\target\\softcare-gui.war",
 								   		  "https://github.com/rsucasas/java-buildpack.git");
 		cfClient.deleteApp("newApp1");
 		

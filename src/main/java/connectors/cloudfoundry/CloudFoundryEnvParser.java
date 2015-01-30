@@ -33,7 +33,7 @@ public class CloudFoundryEnvParser
 	 * @param serviceOfferedRealName
 	 * @return
 	 */
-	public DataBaseParameters parseDBEnvCredentialsValues(String serviceOfferedRealName) 
+	public DataBaseParameters parseDBEnvCredentialsValues(String serviceOfferedRealName)
 	{
 		if ("elephantsql".equalsIgnoreCase(serviceOfferedRealName)) 
 		{

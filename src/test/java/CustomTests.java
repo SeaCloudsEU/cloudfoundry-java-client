@@ -1,20 +1,5 @@
-package tests;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import org.cloudfoundry.client.lib.CloudFoundryClient;
-import org.cloudfoundry.client.lib.StartingInfo;
-import org.cloudfoundry.client.lib.domain.ApplicationStats;
-import org.cloudfoundry.client.lib.domain.CloudApplication;
-import org.cloudfoundry.client.lib.domain.CloudService;
-import org.cloudfoundry.client.lib.domain.CloudServiceBroker;
-import org.cloudfoundry.client.lib.domain.CloudServiceOffering;
 import connectors.cloudfoundry.CloudFoundryConnector;
-import connectors.cloudfoundry.DataBaseParameters;
 import connectors.cloudfoundry.db.SQLScripts;
-
 
 /**
  * 
@@ -30,8 +15,8 @@ public class CustomTests
 		try {
 			// https://api.run.pivotal.io
 			String target = "https://api.run.pivotal.io"; 
-			String user = ""; 				
-			String password = ""; 					
+			String user = "";
+			String password = "";
 			String organization = "org"; 				
 			String space = "development";						
 		
